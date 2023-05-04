@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -36,20 +35,23 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavOptions
 import androidx.navigation.compose.rememberNavController
-import org.amfoss.findme.Model.registerRound
+import org.amfoss.findme.Model.GameRound
 import org.amfoss.findme.Navigation.AppNavigationItem
-import org.amfoss.findme.viewModel.FossViewModel
+import org.amfoss.findme.application.App
+import org.amfoss.findme.util.CacheService
 
 @Composable
-fun roundDialog(value: String,game:String,navController: NavController, setShowDialog: (Boolean) -> Unit, setValue: (String) -> Unit) {
-    val viewModel = hiltViewModel<FossViewModel>()
+fun roundDialogInfo(value: String,game:GameRound,navController: NavController, setShowDialogInfo: (Boolean) -> Unit){
+
     val txtFieldError = remember { mutableStateOf("") }
     val txtField = remember { mutableStateOf(value) }
-
-    Dialog(onDismissRequest = { setShowDialog(false) }) {
+    val cache= App.context?.let { CacheService(it, "barCode") }
+    Dialog(onDismissRequest = {
+        cache?.deleteData()
+        setShowDialogInfo(false) }) {
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = Color.White,
@@ -82,7 +84,7 @@ fun roundDialog(value: String,game:String,navController: NavController, setShowD
                             modifier = Modifier
                                 .width(30.dp)
                                 .height(30.dp)
-                                .clickable { setShowDialog(false) }
+                                .clickable { setShowDialogInfo(false) }
                         )
                     }
 
@@ -92,7 +94,7 @@ fun roundDialog(value: String,game:String,navController: NavController, setShowD
                             .fillMaxWidth()){
                         TextField(
                             modifier = Modifier
-                                .fillMaxWidth(1f)
+                                .fillMaxWidth(0.8f)
                                 .shadow(5.dp, RectangleShape)
                                 .background(Color.White)
                                 .height(60.dp)
@@ -124,7 +126,68 @@ fun roundDialog(value: String,game:String,navController: NavController, setShowD
                             onValueChange = {
                                 txtField.value = it.take(10)
                             })
+
+                        Box(modifier = Modifier.padding(5.dp, 0.dp, 0.dp, 0.dp)) {
+                            Button(
+                                contentPadding =PaddingValues(1.dp),
+                                onClick = {
+                                    navController.navigate(AppNavigationItem.QRScanner.getRoute(game.Game[0].Name),navOptions = navController.currentDestination?.id?.let {
+                                        NavOptions.Builder()
+                                            .setPopUpTo(it, inclusive = true)
+                                            .build()
+                                    })
+                                },
+                                elevation = ButtonDefaults.buttonElevation(10.dp, 5.dp),
+                                shape = RectangleShape,
+                                modifier = Modifier
+                                    .height(60.dp)
+                                    .background(Color.Transparent)
+                                    .padding(0.dp,0.dp),
+                                border = BorderStroke(2.dp, Color.Black),
+                                colors = ButtonDefaults.buttonColors(Color.White)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Add,
+                                    contentDescription = "",
+                                    tint = colorResource(R.color.black),
+                                    modifier = Modifier
+                                        .width(20.dp)
+                                        .height(20.dp)
+                                )
+                            }
+                        }
                     }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    if (game.Participants.isEmpty().not()) {
+                        Box(modifier = Modifier
+                            .fillMaxWidth()
+                            .border(2.dp,Color.Black, RectangleShape)
+                            .padding(5.dp)) {
+                            LazyColumn {
+                                items(game.Participants ?: emptyList()) {
+                                    Row {
+                                        Icon(
+                                            imageVector = Icons.Filled.AddCircle,
+                                            contentDescription = "",
+                                            tint = colorResource(R.color.black),
+                                            modifier = Modifier
+                                                .width(20.dp)
+                                                .height(20.dp)
+                                        )
+                                        Text(
+                                            it.Name,
+                                            fontSize = 15.sp,
+                                            color = Color.Black,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier
+                                                .padding(start = 5.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(20.dp))
                     Row(horizontalArrangement = Arrangement.Center,
                         modifier = Modifier
@@ -136,8 +199,10 @@ fun roundDialog(value: String,game:String,navController: NavController, setShowD
                                         txtFieldError.value = "Field can not be empty"
                                         return@Button
                                     }
-                                    setValue(txtField.value)
-                                    setShowDialog(false)
+                                    if (cache != null) {
+                                        cache.deleteData()
+                                    }
+                                    setShowDialogInfo(false)
                                 },
                                 elevation = ButtonDefaults.buttonElevation(10.dp, 5.dp),
                                 shape = RectangleShape,
@@ -154,6 +219,34 @@ fun roundDialog(value: String,game:String,navController: NavController, setShowD
                                 )
                             }
                         }
+
+                            Box(modifier = Modifier.padding(5.dp, 0.dp, 5.dp, 0.dp)) {
+                                Button(
+                                    onClick = {
+                                        if (txtField.value.isEmpty()) {
+                                            txtFieldError.value = "Field can not be empty"
+                                            return@Button
+                                        }
+                                        if (cache != null) {
+                                            cache.deleteData()
+                                        }
+                                        setShowDialogInfo(false)
+                                    },
+                                    elevation = ButtonDefaults.buttonElevation(10.dp, 5.dp),
+                                    shape = RectangleShape,
+                                    modifier = Modifier
+                                        .height(50.dp)
+                                        .background(Color.Transparent),
+                                    border = BorderStroke(2.dp, Color.Black),
+                                    colors = ButtonDefaults.buttonColors(Color.White)
+                                ) {
+                                    Text(
+                                        text = "Start",
+                                        color = Color.Black,
+                                        fontSize = 18.sp
+                                    )
+                                }
+                            }
                     }
                 }
             }
@@ -163,11 +256,9 @@ fun roundDialog(value: String,game:String,navController: NavController, setShowD
 
 @Preview
 @Composable
-fun previewDialog(){
+fun previewDialogInfo(){
     val showDialog =  remember { mutableStateOf(false) }
-    roundDialog(value = "", game=" ",setShowDialog = {
+    roundDialogInfo(value = "", game= GameRound(0,"","", emptyList(), emptyList(),""),setShowDialogInfo = {
         showDialog.value = true
-    }, navController = rememberNavController()) {
-        Log.i("HomePage","HomePage : $it")
-    }
+    }, navController = rememberNavController())
 }

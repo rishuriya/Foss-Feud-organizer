@@ -1,5 +1,6 @@
 package org.amfoss.findme.UI
 
+import android.annotation.SuppressLint
 import android.graphics.SurfaceTexture
 import android.util.Log
 import android.util.Size
@@ -28,19 +29,41 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.*
 import androidx.navigation.NavController
+import androidx.navigation.NavOptions
+import androidx.navigation.NavOptionsBuilder
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.mlkit.vision.barcode.*
 import kotlinx.coroutines.*
 import org.amfoss.findme.Class.BarCodeAnalyser
+import org.amfoss.findme.Navigation.AppNavigationItem
+import org.amfoss.findme.application.App
+import org.amfoss.findme.util.CacheService
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+@SuppressLint("RememberReturnType")
 @Composable
-fun CameraPreview(game:String, navController: NavController) {
+fun CameraPreview(game:String, navController: NavController){
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var preview by remember { mutableStateOf<Preview?>(null) }
     val barCodeVal = remember { mutableStateOf("") }
+    val showDialog = remember { mutableStateOf(false) }
+    if(showDialog.value)
+    {
+        val cache= App.context?.let { CacheService(it, "barCode") }
+        cache?.saveData(barCodeVal.value)
+        navController.clearBackStack(AppNavigationItem.Rounds.getRoute(game))
+        showDialog.value=false
+        navController.navigate(
+            AppNavigationItem.Rounds.getRoute(game),
+            navOptions = navController.currentDestination?.id?.let {
+                NavOptions.Builder()
+                    .setPopUpTo(it, inclusive = true)
+                    .build()
+            }
+        )
+    }
 
     AndroidView(
         factory = { AndroidViewContext ->
@@ -70,10 +93,11 @@ fun CameraPreview(game:String, navController: NavController) {
                 val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
                 val barcodeAnalyser = BarCodeAnalyser { barcodes ->
                     barcodes.forEach { barcode ->
+                        Log.d("TAG", "CameraPreview: ${barcode.rawValue}")
                         barcode.rawValue?.let { barcodeValue ->
                             barCodeVal.value = barcodeValue
                             Toast.makeText(context, barcodeValue, Toast.LENGTH_SHORT).show()
-
+                            showDialog.value = true
                         }
                     }
                 }

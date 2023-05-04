@@ -1,4 +1,5 @@
 package org.amfoss.findme.UI
+import android.util.Log
 import androidx.compose.foundation.*
 import org.amfoss.findme.R
 import androidx.compose.foundation.gestures.Orientation
@@ -28,21 +29,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
+import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import org.amfoss.findme.MainActivity
 import org.amfoss.findme.Model.Games
 import org.amfoss.findme.Navigation.AppNavigation
 import org.amfoss.findme.Navigation.AppNavigationItem
-
+import org.amfoss.findme.viewModel.FossViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FindMeScreen(navController: NavController) {
+    val viewModel:FossViewModel=hiltViewModel()
     val configuration = LocalConfiguration.current
-
     val screenHeight = configuration.screenHeightDp.dp
     val screenWidth = configuration.screenWidthDp.dp
-    val cards= listOf<Games>(Games("Bug Hunt", R.drawable.ic_bug_hunt),Games("Trivia Quiz", R.drawable.ic_quiz),Games("Blind Coding", R.drawable.ic_blind_coding),Games("Type Racing", R.drawable.ic_speedracer))
+    val cards= listOf<Games>(Games("Bug Hunt", R.drawable.ic_bug_hunt, id = 2),Games("Trivia Quiz", R.drawable.ic_quiz, id = 3),Games("Blind Coding", R.drawable.ic_blind_coding, id = 4),Games("Type Racing", R.drawable.ic_speedracer, id = 5))
+
+    LaunchedEffect(Unit){
+        viewModel.fetchRounds()
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()

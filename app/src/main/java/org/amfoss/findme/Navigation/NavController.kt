@@ -34,7 +34,8 @@ fun AppNavigation(
         composable(route = AppNavigationItem.Rounds.route,
             arguments = listOf(navArgument("name") {
                 type= NavType.StringType
-            })){
+            })){it.destination
+
             Log.d("AppNavigation", "AppNavigation: ${it.arguments?.getString("name")}")
             rounds(navController= navController, page=it.arguments?.getString("name")?:"")
         }
@@ -43,6 +44,7 @@ fun AppNavigation(
                 type= NavType.StringType
             })
         ){
+
             CameraPreview(game = it.arguments?.getString("name")?:"", navController = navController)
         }
         composable(route = AppNavigationItem.Login.route){

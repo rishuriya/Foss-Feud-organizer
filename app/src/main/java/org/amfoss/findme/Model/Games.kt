@@ -6,4 +6,5 @@ data class Games(
     val rounds:Int=0,
     val player:Int=0,
     val time:String="rounds",
+    val id:Int=0
 )

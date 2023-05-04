@@ -109,7 +109,9 @@ contentDescription = "Login Image"
         Spacer(modifier = Modifier.height(20.dp))
         Box(modifier = Modifier.padding(35.dp, 0.dp, 35.dp, 0.dp)) {
             Button(
-                onClick = {navController.navigate(AppNavigationItem.Home.route) },
+                onClick = {
+                 navController.navigate(AppNavigationItem.Home.route)
+                    },
                 elevation = ButtonDefaults.buttonElevation(10.dp, 5.dp),
                 shape = RectangleShape,
                 modifier = Modifier
