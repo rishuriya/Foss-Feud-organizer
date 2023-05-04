@@ -96,7 +96,6 @@ fun CameraPreview(game:String, navController: NavController){
                         Log.d("TAG", "CameraPreview: ${barcode.rawValue}")
                         barcode.rawValue?.let { barcodeValue ->
                             barCodeVal.value = barcodeValue
-                            Toast.makeText(context, barcodeValue, Toast.LENGTH_SHORT).show()
                             showDialog.value = true
                         }
                     }

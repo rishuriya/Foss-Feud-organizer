@@ -25,7 +25,7 @@ fun AppNavigation(
     NavHost(
         navController = navController as NavHostController,
         modifier = Modifier.fillMaxSize(),
-        startDestination = AppNavigationItem.Login.route
+        startDestination = AppNavigationItem.Home.route
     ){
         composable(route = AppNavigationItem.Home.route,
         ){

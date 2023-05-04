@@ -16,10 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.amfoss.findme.Model.GameRound
-import org.amfoss.findme.Model.Participant
-import org.amfoss.findme.Model.registerRound
-import org.amfoss.findme.Model.updateRound
+import org.amfoss.findme.Model.*
 import org.amfoss.findme.Repository.FossRepository
 import org.amfoss.findme.util.Resource
 
@@ -32,6 +29,8 @@ class FossViewModel @Inject constructor(
     val totalRound = _totalRound.asStateFlow()
     private val _user = MutableStateFlow(listOf<Participant>())
     val user = _user.asStateFlow()
+    private val _game = MutableStateFlow(listOf<Game>())
+    val game = _game.asStateFlow()
     var isLoading: Boolean  by mutableStateOf(true)
     fun fetchRounds() {
         viewModelScope.launch(Dispatchers.Default) {
@@ -98,6 +97,45 @@ class FossViewModel @Inject constructor(
             when (response.status) {
                 Resource.Status.SUCCESS -> {
                     val responseListens = response.data!!
+                    Log.d("FossViewModel", "fetchRoun: $responseListens")
+                }
+                Resource.Status.LOADING -> {
+                    isLoading = true
+                }
+                Resource.Status.FAILED -> {
+                    isLoading = false
+                    Log.d("FossViewModel", "fetchRounds: ${response.status}")
+                }
+            }
+        }
+    }
+
+    fun updateUser(id:Int,round: Participant) {
+        viewModelScope.launch(Dispatchers.Default) {
+            val response = repository.updateUser(id, round)
+            when (response.status) {
+                Resource.Status.SUCCESS -> {
+                    val responseListens = response.data!!
+                    Log.d("FossViewModel", "fetchRoun: $responseListens")
+                }
+                Resource.Status.LOADING -> {
+                    isLoading = true
+                }
+                Resource.Status.FAILED -> {
+                    isLoading = false
+                    Log.d("FossViewModel", "fetchRounds: ${response.status}")
+                }
+            }
+        }
+    }
+
+    fun getGame() {
+        viewModelScope.launch(Dispatchers.Default) {
+            val response = repository.getGame()
+            when (response.status) {
+                Resource.Status.SUCCESS -> {
+                    val responseListens = response.data!!
+                    _game.value = responseListens
                     Log.d("FossViewModel", "fetchRoun: $responseListens")
                 }
                 Resource.Status.LOADING -> {

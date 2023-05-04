@@ -1,10 +1,7 @@
 package org.amfoss.findme.Repository
 
 import androidx.annotation.WorkerThread
-import org.amfoss.findme.Model.GameRound
-import org.amfoss.findme.Model.Participant
-import org.amfoss.findme.Model.registerRound
-import org.amfoss.findme.Model.updateRound
+import org.amfoss.findme.Model.*
 import org.amfoss.findme.service.ApiService
 import org.amfoss.findme.util.Resource
 import javax.inject.Inject
@@ -51,6 +48,28 @@ class FossRepositoryImpl @Inject constructor(val service: ApiService) : FossRepo
         return try {
             val response = service.updateGameRound(id,round)
             Resource(Resource.Status.SUCCESS, response.isSuccessful)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Resource(Resource.Status.FAILED, null)
+        }
+    }
+
+    @WorkerThread
+    override suspend fun updateUser(id:Int,round: Participant): Resource<Boolean> {
+        return try {
+            val response = service.updateStudent(id,round)
+            Resource(Resource.Status.SUCCESS, response.isSuccessful)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Resource(Resource.Status.FAILED, null)
+        }
+    }
+
+    @WorkerThread
+    override suspend fun getGame(): Resource<List<Game>> {
+        return try {
+            val response = service.getGame()
+            Resource(Resource.Status.SUCCESS, response.Rounds)
         } catch (e: Exception) {
             e.printStackTrace()
             Resource(Resource.Status.FAILED, null)

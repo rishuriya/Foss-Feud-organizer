@@ -1,7 +1,7 @@
 package org.amfoss.findme.UI
 
-import android.telecom.Call.Details
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -46,9 +47,16 @@ import org.amfoss.findme.util.CacheService
 fun rounds(navController: NavController, page: String, viewModel: FossViewModel = hiltViewModel<FossViewModel>()) {
     val showDialog =  remember { mutableStateOf(false) }
     var value = remember { mutableStateOf("") }
+    val context = LocalContext.current
+    LaunchedEffect(Unit){
+        viewModel.fetchRounds()
+        viewModel.getGame()
+    }
     var confirm= remember { mutableStateOf(false) }
     var gameround= remember { mutableStateOf( GameRound(0,"","", emptyList(), emptyList(),""))}
     val showDialogInfo =  remember { mutableStateOf(false) }
+    val GameState by viewModel.game.collectAsState()
+    val gameID = GameState.filter { it.Name == page }
     if(showDialog.value)
         roundDialog(value = "",game=page, setShowDialog = {
             showDialog.value = it
@@ -69,13 +77,11 @@ fun rounds(navController: NavController, page: String, viewModel: FossViewModel 
     Log.i("HomePage","HomePage : ${value.value}")
     if(confirm.value) {
         LaunchedEffect(Unit) {
-            viewModel.addRound(registerRound(value.value, 3))
+            viewModel.addRound(registerRound(value.value, gameID[0].id))
             value.value=""
         }
     }
-    LaunchedEffect(Unit){
-        viewModel.fetchRounds()
-    }
+
     val RoundState by viewModel.totalRound.collectAsState()
     val UserState by viewModel.user.collectAsState()
     val totalRoundState = RoundState.filter { it.Game[0].Name == page }
@@ -154,18 +160,25 @@ fun rounds(navController: NavController, page: String, viewModel: FossViewModel 
         if(data!="" && totalRoundState.size!=0){
             val rjnud=UserState.filter { it.Qrid==data }.toMutableList()
             val round=totalRoundState.filter { it.id==idData?.toInt() }.toMutableList()
-            value.value = round[0].Name
-            var land=round[0].Participants.toMutableList()
-            land.addAll(rjnud)
-            val participants=land.toSet().toList()
-            round[0].Participants=participants
-            val participantIds = round[0].Participants.map { it.id }
-            Log.i("HomePage","CheckId : ${participantIds}")
-            LaunchedEffect(Unit){
-                viewModel.updateRound(round[0].id,
-                    updateRound(round[0].Name,round[0].Game[0].id,participantIds))
+            if(rjnud[0].Credits>=round[0].Game[0].deduction || !round[0].deduction) {
+                var land = round[0].Participants.toMutableList()
+                land.addAll(rjnud)
+                val participants = land.toSet().toList()
+                round[0].Participants = participants
+                val participantIds = round[0].Participants.map { it.id }
+                LaunchedEffect(Unit) {
+                    viewModel.updateRound(
+                        round[0].id,
+                        updateRound(round[0].Name, round[0].Game[0].id, participantIds)
+                    )
+                    Toast.makeText(context, rjnud[0].Name, Toast.LENGTH_SHORT).show()
+                }
             }
-            gameround.value=round[0]
+            else if(rjnud[0].Credits<round[0].Game[0].deduction){
+                Toast.makeText(context, "Not Enough Credit", Toast.LENGTH_SHORT).show()
+            }
+            value.value = round[0].Name
+            gameround.value = round[0]
             showDialogInfo.value=true
         }
         Box(

@@ -14,4 +14,10 @@ interface ApiService {
 
     @PUT("updateRound/{id}/")
     suspend fun updateGameRound(@Path("id") id: Int, @Body gameRound: updateRound): Response<registerRound>
+
+    @PUT("updateUser/{id}/")
+    suspend fun updateStudent(@Path("id") id: Int, @Body user: Participant): Response<Participant>
+
+    @GET("getGame")
+    suspend fun getGame(): getGame
 }

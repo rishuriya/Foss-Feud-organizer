@@ -23,3 +23,7 @@ data class updateRound(
     val deduction: Boolean=true,
     val status:String="Pending",
 )
+
+data class getGame(
+    val Rounds: List<Game>
+)

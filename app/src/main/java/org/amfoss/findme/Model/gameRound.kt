@@ -6,7 +6,8 @@ data class GameRound(
     val Winner: String,
     var Participants: List<Participant>,
     val Game: List<Game>,
-    val status: String
+    var status: String,
+    var deduction: Boolean=true
 )
 
 data class Participant(
@@ -14,7 +15,7 @@ data class Participant(
     val Qrid: String,
     val Name: String,
     val Points: Int,
-    val Credits: Int
+    var Credits: Int
 )
 
 data class Game(
