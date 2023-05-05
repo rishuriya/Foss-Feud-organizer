@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,12 +29,29 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.launch
+import org.amfoss.findme.Model.Participant
+import org.amfoss.findme.Model.RegisterUser
 import org.amfoss.findme.Navigation.AppNavigationItem
 import org.amfoss.findme.R
+import org.amfoss.findme.viewModel.FossViewModel
+
 @Composable
 fun LoginPage(navController: NavController) {
+    val username = remember { mutableStateOf(TextFieldValue()) }
+    val password = remember { mutableStateOf(TextFieldValue()) }
+    val coroutineScope = rememberCoroutineScope()
+    val viewModel= hiltViewModel<FossViewModel>()
+    val completeRound: () -> Unit = {
+        coroutineScope.launch {
+            viewModel.postUser(RegisterUser(Name = username.value.text, Qrid = password.value.text))
+        }
+        navController.navigateUp()
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.ic_amfoss),
@@ -53,8 +71,6 @@ contentDescription = "Login Image"
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        val username = remember { mutableStateOf(TextFieldValue()) }
-        val password = remember { mutableStateOf(TextFieldValue()) }
 
         Image(
             painter = painterResource(id = R.drawable.ic_vidyut),
@@ -84,7 +100,7 @@ contentDescription = "Login Image"
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent
             ),
-            label = { Text(text = "Username") },
+            label = { Text(text = "Full Name") },
             value = username.value,
             onValueChange = { username.value = it }
         )
@@ -100,18 +116,14 @@ contentDescription = "Login Image"
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent
             ),
-            label = { Text(text = "Password") },
+            label = { Text(text = "Vidyut ID") },
             value = password.value,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             onValueChange = { password.value = it })
 
         Spacer(modifier = Modifier.height(20.dp))
         Box(modifier = Modifier.padding(35.dp, 0.dp, 35.dp, 0.dp)) {
             Button(
-                onClick = {
-                 navController.navigate(AppNavigationItem.Home.route)
-                    },
+                onClick = completeRound,
                 elevation = ButtonDefaults.buttonElevation(10.dp, 5.dp),
                 shape = RectangleShape,
                 modifier = Modifier

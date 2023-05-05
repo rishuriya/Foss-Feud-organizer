@@ -29,7 +29,7 @@ class FossViewModel @Inject constructor(
     val totalRound = _totalRound.asStateFlow()
     private val _user = MutableStateFlow(listOf<Participant>())
     val user = _user.asStateFlow()
-    private val _game = MutableStateFlow(listOf<Game>())
+    private val _game = MutableStateFlow(listOf<getGameround>())
     val game = _game.asStateFlow()
     var isLoading: Boolean  by mutableStateOf(true)
     fun fetchRounds() {
@@ -59,14 +59,14 @@ class FossViewModel @Inject constructor(
                 Resource.Status.SUCCESS -> {
                     val responseListens = response.data!!
                     _user.value = responseListens
-                    Log.d("FossViewModel", "fetchRoun: ${_user.value}")
+                    Log.d("FossViewModel", "fetchUser: ${_user.value}")
                 }
                 Resource.Status.LOADING -> {
                     isLoading = true
                 }
                 Resource.Status.FAILED -> {
                     isLoading = false
-                    Log.d("FossViewModel", "fetchRounds: ${response.status}")
+                    Log.d("FossViewModel", "fetchUser: ${response.status}")
                 }
             }
         }
@@ -78,6 +78,42 @@ class FossViewModel @Inject constructor(
             when (response.status) {
                 Resource.Status.SUCCESS -> {
                     val responseListens = response.data!!
+                    Log.d("FossViewModel", "addRound: $responseListens")
+                }
+                Resource.Status.LOADING -> {
+                    isLoading = true
+                }
+                Resource.Status.FAILED -> {
+                    isLoading = false
+                    Log.d("FossViewModel", "addRound: ${response.status}")
+                }
+            }
+        }
+    }
+    fun postUser(user: RegisterUser) {
+        viewModelScope.launch(Dispatchers.Default) {
+            val response = repository.postUser(user)
+            when (response.status) {
+                Resource.Status.SUCCESS -> {
+                    val responseListens = response.data!!
+                    Log.d("FossViewModel", "postUser: $responseListens")
+                }
+                Resource.Status.LOADING -> {
+                    isLoading = true
+                }
+                Resource.Status.FAILED -> {
+                    isLoading = false
+                    Log.d("FossViewModel", "postUser: ${response.status}")
+                }
+            }
+        }
+    }
+    fun addWinner(round: Winner) {
+        viewModelScope.launch(Dispatchers.Default) {
+            val response = repository.postWinner(round)
+            when (response.status) {
+                Resource.Status.SUCCESS -> {
+                    val responseListens = response.data!!
                     Log.d("FossViewModel", "fetchRoun: $responseListens")
                 }
                 Resource.Status.LOADING -> {
@@ -90,21 +126,20 @@ class FossViewModel @Inject constructor(
             }
         }
     }
-
     fun updateRound(id:Int,round: updateRound) {
         viewModelScope.launch(Dispatchers.Default) {
             val response = repository.updateRound(id, round)
             when (response.status) {
                 Resource.Status.SUCCESS -> {
                     val responseListens = response.data!!
-                    Log.d("FossViewModel", "fetchRoun: $responseListens")
+                    Log.d("FossViewModel", "updateRound: $responseListens")
                 }
                 Resource.Status.LOADING -> {
                     isLoading = true
                 }
                 Resource.Status.FAILED -> {
                     isLoading = false
-                    Log.d("FossViewModel", "fetchRounds: ${response.status}")
+                    Log.d("FossViewModel", "updateRounds: ${response.status}")
                 }
             }
         }
@@ -116,14 +151,14 @@ class FossViewModel @Inject constructor(
             when (response.status) {
                 Resource.Status.SUCCESS -> {
                     val responseListens = response.data!!
-                    Log.d("FossViewModel", "fetchRoun: $responseListens")
+                    Log.d("FossViewModel", "updateUser: $responseListens")
                 }
                 Resource.Status.LOADING -> {
                     isLoading = true
                 }
                 Resource.Status.FAILED -> {
                     isLoading = false
-                    Log.d("FossViewModel", "fetchRounds: ${response.status}")
+                    Log.d("FossViewModel", "updateUser: ${response.status}")
                 }
             }
         }
@@ -136,14 +171,14 @@ class FossViewModel @Inject constructor(
                 Resource.Status.SUCCESS -> {
                     val responseListens = response.data!!
                     _game.value = responseListens
-                    Log.d("FossViewModel", "fetchRoun: $responseListens")
+                    Log.d("FossViewModel", "getGame: $responseListens")
                 }
                 Resource.Status.LOADING -> {
                     isLoading = true
                 }
                 Resource.Status.FAILED -> {
                     isLoading = false
-                    Log.d("FossViewModel", "fetchRounds: ${response.status}")
+                    Log.d("FossViewModel", "getGame: ${response.status}")
                 }
             }
         }

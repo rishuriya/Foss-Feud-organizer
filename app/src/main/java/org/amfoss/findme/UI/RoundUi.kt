@@ -36,7 +36,10 @@ import org.amfoss.findme.Dialog.roundDialog
 import org.amfoss.findme.R
 import org.amfoss.findme.viewModel.FossViewModel
 import androidx.lifecycle.asLiveData
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
+import org.amfoss.findme.Dialog.findDialog
 import org.amfoss.findme.Dialog.roundDialogInfo
 import org.amfoss.findme.Model.*
 import org.amfoss.findme.application.App
@@ -53,7 +56,7 @@ fun rounds(navController: NavController, page: String, viewModel: FossViewModel 
         viewModel.getGame()
     }
     var confirm= remember { mutableStateOf(false) }
-    var gameround= remember { mutableStateOf( GameRound(0,"","", emptyList(), emptyList(),""))}
+    var gameround= remember { mutableStateOf( GameRound(0,"", emptyList(), emptyList(), emptyList(),""))}
     val showDialogInfo =  remember { mutableStateOf(false) }
     val GameState by viewModel.game.collectAsState()
     val gameID = GameState.filter { it.Name == page }
@@ -65,15 +68,26 @@ fun rounds(navController: NavController, page: String, viewModel: FossViewModel 
             confirm.value=true
 
         }
+    val showDialogFind =  remember { mutableStateOf(false) }
+    if(showDialogFind.value)
+        findDialog(setShowDialogFind = {
+            showDialogFind.value = it
+        }) {
+
+            Log.d("TAG", "roundDialogInfo: $it")
+        }
     val cache= App.context?.let { CacheService(it, "barCode") }
     val cacheGame= App.context?.let { CacheService(it, "game") }
     val data= cache?.getData()
     val idData= cacheGame?.getData()
-    println(data)
     if(showDialogInfo.value)
         roundDialogInfo(value = value.value,game=gameround.value, setShowDialogInfo = {
             showDialogInfo.value = it
-        }, navController = navController)
+        }, navController = navController){
+            if(it=="True"){
+                showDialogFind.value=true
+            }
+        }
     Log.i("HomePage","HomePage : ${value.value}")
     if(confirm.value) {
         LaunchedEffect(Unit) {
@@ -86,6 +100,23 @@ fun rounds(navController: NavController, page: String, viewModel: FossViewModel 
     val UserState by viewModel.user.collectAsState()
     val totalRoundState = RoundState.filter { it.Game[0].Name == page }
     val res= when (page) {
+        "Bug Hunt" -> {
+            R.drawable.ic_bug_hunt
+        }
+        "Trivia Quiz" -> {
+            R.drawable.ic_quiz
+        }
+        "Blind Coding" -> {
+            R.drawable.ic_blind_coding
+        }
+        "Type Racing" -> {
+            R.drawable.ic_speedracer
+        }
+        else -> {
+            R.drawable.ic_quiz
+        }
+    }
+    val Pageid= when (page) {
         "Bug Hunt" -> {
             R.drawable.ic_bug_hunt
         }
@@ -159,24 +190,30 @@ fun rounds(navController: NavController, page: String, viewModel: FossViewModel 
         }
         if(data!="" && totalRoundState.size!=0){
             val rjnud=UserState.filter { it.Qrid==data }.toMutableList()
+            Log.d("rjnud","$rjnud")
             val round=totalRoundState.filter { it.id==idData?.toInt() }.toMutableList()
-            if(rjnud[0].Credits>=round[0].Game[0].deduction || !round[0].deduction) {
-                var land = round[0].Participants.toMutableList()
-                land.addAll(rjnud)
-                val participants = land.toSet().toList()
-                round[0].Participants = participants
-                val participantIds = round[0].Participants.map { it.id }
-                LaunchedEffect(Unit) {
-                    viewModel.updateRound(
-                        round[0].id,
-                        updateRound(round[0].Name, round[0].Game[0].id, participantIds)
-                    )
-                    Toast.makeText(context, rjnud[0].Name, Toast.LENGTH_SHORT).show()
+            if(!rjnud.isEmpty()) {
+                if (rjnud[0].Credits >= round[0].Game[0].deduction || !round[0].deduction) {
+                    var land = round[0].Participants.toMutableList()
+                    land.addAll(rjnud)
+                    val participants = land.toSet().toList()
+                    round[0].Participants = participants
+                    val participantIds = round[0].Participants.map { it.id }
+                    LaunchedEffect(Unit) {
+                        viewModel.updateRound(
+                            round[0].id,
+                            updateRound(round[0].Name, round[0].Game[0].id, participantIds)
+                        )
+                        Toast.makeText(context, rjnud[0].Name, Toast.LENGTH_SHORT).show()
+                    }
+                } else if (rjnud[0].Credits < round[0].Game[0].deduction) {
+                    Toast.makeText(context, "Not Enough Credit", Toast.LENGTH_SHORT).show()
                 }
             }
-            else if(rjnud[0].Credits<round[0].Game[0].deduction){
-                Toast.makeText(context, "Not Enough Credit", Toast.LENGTH_SHORT).show()
+            else {
+                Toast.makeText(context, "Not Registered", Toast.LENGTH_SHORT).show()
             }
+            cache?.deleteData()
             value.value = round[0].Name
             gameround.value = round[0]
             showDialogInfo.value=true

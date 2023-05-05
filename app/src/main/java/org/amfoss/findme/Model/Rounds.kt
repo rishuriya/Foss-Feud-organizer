@@ -25,5 +25,18 @@ data class updateRound(
 )
 
 data class getGame(
-    val Rounds: List<Game>
+    val Rounds: List<getGameround>
+)
+
+data class RegisterUser(
+    val Qrid: String,
+    val Name: String,
+    val Points: Int=0,
+    val Credits: Int=300
+)
+data class getGameround(
+    val id: Int,
+    val Name: String,
+    val deduction: Int=0,
+    val gameAward: Int
 )

@@ -26,6 +26,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,8 +35,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.amfoss.findme.Model.GameRound
+import org.amfoss.findme.Model.Participant
+import org.amfoss.findme.Model.Winner
 import org.amfoss.findme.Model.updateRound
 import org.amfoss.findme.Navigation.AppNavigationItem
 import org.amfoss.findme.application.App
@@ -45,13 +49,15 @@ import java.util.stream.IntStream.range
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun roundDialogInfo(value: String,game:GameRound,navController: NavController, setShowDialogInfo: (Boolean) -> Unit){
+fun roundDialogInfo(value: String,game:GameRound,navController: NavController, setShowDialogInfo: (Boolean) -> Unit,setValue: (String) -> Unit){
     val viewModel:FossViewModel= hiltViewModel()
     val coroutineScope = rememberCoroutineScope()
     val txtFieldError = remember { mutableStateOf("") }
     val txtField = remember { mutableStateOf(value) }
     val cache= App.context?.let { CacheService(it, "barCode") }
+    val selectedCard = remember { mutableStateListOf<Participant?>() }
     var check= remember { mutableStateOf(game.deduction)}
+    val UserState by viewModel.user.collectAsState()
     val getLocationOnClick: () -> Unit = {
         val participantIds = game.Participants.map { it.id }
         game.deduction=check.value
@@ -68,16 +74,63 @@ fun roundDialogInfo(value: String,game:GameRound,navController: NavController, s
 
     val startRound: () -> Unit = {
         val participantIds = game.Participants.map { it.id }
-        game.deduction=check.value
-        game.status="Started"
-        coroutineScope.launch{
-            viewModel.updateRound(game.id,
-                updateRound(game.Name,game.Game[0].id,participantIds, deduction = game.deduction,status = game.status)
+        game.deduction = check.value
+        game.status = "Started"
+        coroutineScope.launch {
+            viewModel.updateRound(
+                game.id,
+                updateRound(
+                    game.Name,
+                    game.Game[0].id,
+                    participantIds,
+                    deduction = game.deduction,
+                    status = game.status
+                )
             )
-            for(participant in game.Participants){
-                if(game.deduction)
-                    participant.Credits=participant.Credits-game.Game[0].deduction
-                viewModel.updateUser(participant.id,participant)
+            for (participant in game.Participants) {
+                if (game.deduction)
+                    participant.Credits = participant.Credits - game.Game[0].deduction
+                viewModel.updateUser(participant.id, participant)
+            }
+        }
+
+        if (cache != null) {
+            cache.deleteData()
+        }
+        setShowDialogInfo(false)
+    }
+
+    val completeRound: () -> Unit = {
+        coroutineScope.launch{
+            viewModel.fetchUser()
+            delay(1000)
+        }
+        val participantIds = game.Participants.map { it.id }
+        game.deduction = check.value
+        game.status = "Completed"
+        coroutineScope.launch {
+            viewModel.updateRound(
+                game.id,
+                updateRound(
+                    game.Name,
+                    game.Game[0].id,
+                    participantIds,
+                    deduction = game.deduction,
+                    status = game.status
+                )
+            )
+            val winner=Winner(id=game.id,gameID = game.Game[0].id, roundID = game.id, firstPlace = selectedCard[0]!!.Qrid, secondPlace = selectedCard[1]!!.Qrid, thirdPlace = selectedCard[2]!!.Qrid)
+            viewModel.addWinner(Winner(id=game.id,gameID = game.Game[0].id, roundID = game.id, firstPlace = selectedCard[0]!!.Qrid, secondPlace = selectedCard[1]!!.Qrid, thirdPlace = selectedCard[2]!!.Qrid))
+            for(i in 0..selectedCard.size-1){
+                val participant= UserState.filter { it.Qrid==selectedCard[i]?.Qrid }
+                println(selectedCard[i])
+                if(i==0)
+                    selectedCard[i]?.Points=selectedCard[i]?.Points!!+game.Game[0].gameAward[0].firstPlace
+                else if(i==1)
+                    selectedCard[i]?.Points=selectedCard[i]?.Points!!+game.Game[0].gameAward[0].secondPlace
+                else if(i==2)
+                    selectedCard[i]?.Points=selectedCard[i]?.Points!!+game.Game[0].gameAward[0].thirdPlace
+                viewModel.updateUser(selectedCard[i]!!.id,selectedCard[i]!!)
             }
         }
         if (cache != null) {
@@ -183,12 +236,15 @@ fun roundDialogInfo(value: String,game:GameRound,navController: NavController, s
                             Button(
                                 contentPadding =PaddingValues(1.dp),
                                 onClick = {
-                                    navController.navigate(AppNavigationItem.QRScanner.getRoute(game.Game[0].Name),navOptions = navController.currentDestination?.id?.let {
-                                        NavOptions.Builder()
-                                            .setPopUpTo(it, inclusive = true)
-                                            .build()
-                                    })
+//                                    navController.navigate(AppNavigationItem.QRScanner.getRoute(game.Game[0].Name),navOptions = navController.currentDestination?.id?.let {
+//                                        NavOptions.Builder()
+//                                            .setPopUpTo(it, inclusive = true)
+//                                            .build()
+//                                    })
+                                          setValue("True")
+                                    setShowDialogInfo(false)
                                 },
+                                enabled = game.status=="Pending",
                                 elevation = ButtonDefaults.buttonElevation(10.dp, 5.dp),
                                 shape = RectangleShape,
                                 modifier = Modifier
@@ -217,7 +273,13 @@ fun roundDialogInfo(value: String,game:GameRound,navController: NavController, s
                             .padding(5.dp)) {
                             LazyColumn {
                                 items(game.Participants ?: emptyList()) {
-                                    Card {
+                                    Spacer(modifier = Modifier.height(5.dp))
+                                    Card(modifier = Modifier
+                                        .background(Color.White)
+                                        .fillMaxWidth()
+                                        .border(2.dp,if (selectedCard.indexOf(it)==0) Color.Green else if (selectedCard.indexOf(it)==1) Color.Yellow else if(selectedCard.indexOf(it)==2) Color.Red else Color.Transparent, RectangleShape)
+                                        .clickable { if(selectedCard.size<3) selectedCard.add(it) else if (selectedCard.contains(it)) selectedCard.remove(it)},
+                                        shape = RectangleShape) {
                                         Row {
                                             Icon(
                                                 imageVector = Icons.Filled.CheckCircle,
@@ -251,24 +313,25 @@ fun roundDialogInfo(value: String,game:GameRound,navController: NavController, s
                     Row(horizontalArrangement = Arrangement.Center,
                         modifier = Modifier
                             .fillMaxWidth()) {
-                        Box(modifier = Modifier.padding(5.dp, 0.dp, 5.dp, 0.dp)) {
-                            Button(
-                                onClick = getLocationOnClick,
-                                elevation = ButtonDefaults.buttonElevation(10.dp, 5.dp),
-                                shape = RectangleShape,
-                                modifier = Modifier
-                                    .height(50.dp)
-                                    .background(Color.Transparent),
-                                border = BorderStroke(2.dp, Color.Black),
-                                colors = ButtonDefaults.buttonColors(Color.White)
-                            ) {
-                                Text(
-                                    text = "Save",
-                                    color = Color.Black,
-                                    fontSize = 18.sp
-                                )
+                        if (game.status == "Pending" ) {
+                            Box(modifier = Modifier.padding(5.dp, 0.dp, 5.dp, 0.dp)) {
+                                Button(
+                                    onClick = getLocationOnClick,
+                                    elevation = ButtonDefaults.buttonElevation(10.dp, 5.dp),
+                                    shape = RectangleShape,
+                                    modifier = Modifier
+                                        .height(50.dp)
+                                        .background(Color.Transparent),
+                                    border = BorderStroke(2.dp, Color.Black),
+                                    colors = ButtonDefaults.buttonColors(Color.White)
+                                ) {
+                                    Text(
+                                        text = "Save",
+                                        color = Color.Black,
+                                        fontSize = 18.sp
+                                    )
+                                }
                             }
-                        }
 
                             Box(modifier = Modifier.padding(5.dp, 0.dp, 5.dp, 0.dp)) {
                                 Button(
@@ -288,6 +351,27 @@ fun roundDialogInfo(value: String,game:GameRound,navController: NavController, s
                                     )
                                 }
                             }
+                        }
+                        else if(game.status=="Started") {
+                            Box(modifier = Modifier.padding(5.dp, 0.dp, 5.dp, 0.dp)) {
+                                Button(
+                                    onClick = completeRound,
+                                    elevation = ButtonDefaults.buttonElevation(10.dp, 5.dp),
+                                    shape = RectangleShape,
+                                    modifier = Modifier
+                                        .height(50.dp)
+                                        .background(Color.Transparent),
+                                    border = BorderStroke(2.dp, Color.Black),
+                                    colors = ButtonDefaults.buttonColors(Color.White)
+                                ) {
+                                    Text(
+                                        text = "Complete",
+                                        color = Color.Black,
+                                        fontSize = 18.sp
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -299,7 +383,9 @@ fun roundDialogInfo(value: String,game:GameRound,navController: NavController, s
 @Composable
 fun previewDialogInfo(){
     val showDialog =  remember { mutableStateOf(false) }
-    roundDialogInfo(value = "", game= GameRound(0,"","", emptyList(), emptyList(),""),setShowDialogInfo = {
+    roundDialogInfo(value = "", game= GameRound(0,"", emptyList(), emptyList(), emptyList(),""),setShowDialogInfo = {
         showDialog.value = true
-    }, navController = rememberNavController())
+    }, navController = rememberNavController()){
+        Log.i("HomePage","HomePage : $it")
+    }
 }

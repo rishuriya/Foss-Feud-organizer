@@ -15,7 +15,7 @@ class ServiceModule {
     @get:Provides
     @get:Singleton
     val apiService: ApiService = Retrofit.Builder()
-        .baseUrl("http://192.168.182.140:5500/")
+        .baseUrl("https://geoeditiors.toolforge.org/")
         .addConverterFactory(GsonConverterFactory.create())
         .build().create(ApiService::class.java)
 }

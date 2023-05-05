@@ -20,4 +20,10 @@ interface ApiService {
 
     @GET("getGame")
     suspend fun getGame(): getGame
+
+    @POST("postWinner/")
+    suspend fun postWinner(@Body winner: Winner): Response<Winner>
+
+    @POST("postUser/")
+    suspend fun postUser(@Body user: RegisterUser): Response<Participant>
 }

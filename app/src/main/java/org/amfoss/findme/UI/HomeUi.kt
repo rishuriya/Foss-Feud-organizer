@@ -45,6 +45,7 @@ fun FindMeScreen(navController: NavController) {
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     val screenWidth = configuration.screenWidthDp.dp
+    val roundList by viewModel.totalRound.collectAsState()
     val cards= listOf<Games>(Games("Bug Hunt", R.drawable.ic_bug_hunt, id = 2),Games("Trivia Quiz", R.drawable.ic_quiz, id = 3),Games("Blind Coding", R.drawable.ic_blind_coding, id = 4),Games("Type Racing", R.drawable.ic_speedracer, id = 5))
 
     LaunchedEffect(Unit){
@@ -100,9 +101,12 @@ fun FindMeScreen(navController: NavController) {
                             .clip(RoundedCornerShape(6.dp))
                             .background(Color.White)
                             .border(2.dp, Color.Black, RoundedCornerShape(6.dp))
+                            .clickable {
+                                navController.navigate(AppNavigationItem.Login.route)
+                            }
                     ) {
                         Image(
-                            painter = painterResource(R.drawable.ic_search),
+                            painter = painterResource(R.drawable.ic_signup),
                             contentDescription = "Emoji",
                             modifier = Modifier
                                 .size(30.dp)
@@ -113,7 +117,7 @@ fun FindMeScreen(navController: NavController) {
                     }
                 }
                 Text(
-                    text = "Hello, Rishav!",
+                    text = "Hello, Organizer!",
                     fontSize = 30.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.Black,
@@ -206,6 +210,10 @@ fun FindMeScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.Center,
             ) {
                 items(cards) { card ->
+                    var player=0
+                    for(round in roundList.filter { it.Game[0].Name == card.name }){
+                        player += round.Participants.size
+                    }
                     Card(
                         modifier = Modifier
                             .padding(8.dp)
@@ -241,7 +249,7 @@ fun FindMeScreen(navController: NavController) {
                                 .padding(top = 8.dp, start = 8.dp)
                         )
                         Text(
-                            text = "${card.rounds} Rounds",
+                            text = "${roundList.filter { it.Game[0].Name==card.name }.size} Rounds",
                             color = Color.Black,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
@@ -250,7 +258,7 @@ fun FindMeScreen(navController: NavController) {
                                 .padding(start = 8.dp)
                         )
                         Text(
-                            text = "${card.player} Players",
+                            text = "${player} Players",
                             color = Color.Black,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Normal,

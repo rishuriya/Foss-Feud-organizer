@@ -66,10 +66,32 @@ class FossRepositoryImpl @Inject constructor(val service: ApiService) : FossRepo
     }
 
     @WorkerThread
-    override suspend fun getGame(): Resource<List<Game>> {
+    override suspend fun getGame(): Resource<List<getGameround>> {
         return try {
             val response = service.getGame()
             Resource(Resource.Status.SUCCESS, response.Rounds)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Resource(Resource.Status.FAILED, null)
+        }
+    }
+
+    @WorkerThread
+    override suspend fun postWinner(winner: Winner): Resource<Boolean> {
+        return try {
+            val response = service.postWinner(winner)
+            Resource(Resource.Status.SUCCESS, response.isSuccessful)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Resource(Resource.Status.FAILED, null)
+        }
+    }
+
+    @WorkerThread
+    override suspend fun postUser(user:RegisterUser): Resource<Boolean> {
+        return try {
+            val response = service.postUser(user)
+            Resource(Resource.Status.SUCCESS, response.isSuccessful)
         } catch (e: Exception) {
             e.printStackTrace()
             Resource(Resource.Status.FAILED, null)

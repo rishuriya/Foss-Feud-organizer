@@ -14,5 +14,9 @@ interface FossRepository {
 
     suspend fun updateUser(id:Int,round: Participant): Resource<Boolean>
 
-    suspend fun getGame(): Resource<List<Game>>
+    suspend fun getGame(): Resource<List<getGameround>>
+
+    suspend fun postWinner(winner: Winner): Resource<Boolean>
+
+    suspend fun postUser(user: RegisterUser): Resource<Boolean>
 }
